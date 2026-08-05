@@ -177,13 +177,18 @@ jobs:
         with:
           path: artifacts
 
+      - name: Debug artifact structure
+        run: |
+          find artifacts -type f | sort
+
       - name: Prepare release files
         run: |
           mkdir -p release_assets
-          cp artifacts/network_guardian-portable/NetworkGuardian.exe release_assets/
-          cp artifacts/network_guardian-portable-package/NetworkGuardian_Portable.zip release_assets/
-          cp artifacts/model_manifest/model_manifest.json release_assets/
-          cp artifacts/model-files/*.pkl release_assets/
+          # Find and copy files regardless of exact path
+          find artifacts -name "NetworkGuardian.exe" -exec cp {} release_assets/ \;
+          find artifacts -name "NetworkGuardian_Portable.zip" -exec cp {} release_assets/ \;
+          find artifacts -name "model_manifest.json" -exec cp {} release_assets/ \;
+          find artifacts -name "*.pkl" -exec cp {} release_assets/ \;
           
           # Create checksums
           cd release_assets
