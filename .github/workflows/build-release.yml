@@ -63,7 +63,7 @@ jobs:
     name: Build Windows Portable .exe
     runs-on: windows-latest
     needs: lint-test
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,12 +83,6 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Train models (for build)
-        run: |
-          python src/train_model.py
-        shell: pwsh
-        continue-on-error: true
-
       - name: Verify model files exist
         run: |
           $models = @(
@@ -100,15 +94,11 @@ jobs:
           $allExist = $true
           foreach ($m in $models) {
             if (-not (Test-Path $m)) {
-              Write-Warning "Missing model file: $m"
-              $allExist = $false
-            } else {
-              $size = (Get-Item $m).Length / 1MB
-              Write-Host "✅ $m ($([math]::Round($size,1)) MB)"
+              Write-Error "Missing model file: $m"
+              exit 1
             }
-          }
-          if (-not $allExist) {
-            Write-Warning "Some model files missing, but continuing build..."
+            $size = (Get-Item $m).Length / 1MB
+            Write-Host "✅ $m ($([math]::Round($size,1)) MB)"
           }
         shell: pwsh
 
@@ -130,19 +120,16 @@ jobs:
           # Test basic run
           & $exe --version
         shell: pwsh
-        continue-on-error: true
 
       - name: Generate manifest with SHA256
         run: |
           python build.py manifest
         shell: pwsh
-        continue-on-error: true
 
       - name: Create portable package
         run: |
           python build.py package
         shell: pwsh
-        continue-on-error: true
 
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
@@ -150,7 +137,6 @@ jobs:
           name: network_guardian-portable
           path: dist/${{ env.PROJECT_NAME }}.exe
           retention-days: 30
-        continue-on-error: true
 
       - name: Upload portable package artifact
         uses: actions/upload-artifact@v4
@@ -158,7 +144,6 @@ jobs:
           name: network_guardian-portable-package
           path: NetworkGuardian_Portable.zip
           retention-days: 30
-        continue-on-error: true
 
       - name: Upload manifest artifact
         uses: actions/upload-artifact@v4
@@ -166,7 +151,6 @@ jobs:
           name: model_manifest
           path: model_manifest.json
           retention-days: 30
-        continue-on-error: true
 
       - name: Upload model files artifact
         uses: actions/upload-artifact@v4
@@ -174,7 +158,6 @@ jobs:
           name: model-files
           path: models/*.pkl
           retention-days: 30
-        continue-on-error: true
 
   # ─── 3. Create GitHub Release ───────────────────────────────────────
   create-release:

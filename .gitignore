@@ -15,8 +15,8 @@ build/
 *.egg-info/
 *.spec
 
-# Model files (large, handled by GitHub Releases)
-models/*.pkl
+# Model files (included in repo for CI build)
+# models/*.pkl
 !models/.gitkeep
 
 # Logs
