@@ -48,4 +48,5 @@ coverage.xml
 .tox/
 
 # Local config (copy to config.yaml and edit)
-# config.yaml
+# config.yaml*.exe
+*.zip
