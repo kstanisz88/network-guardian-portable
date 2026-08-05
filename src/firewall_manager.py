@@ -4,11 +4,10 @@ Firewall Manager for Windows
 Handles IP blocking (quarantine) and whitelisting via Windows Firewall.
 """
 
-import subprocess
 import logging
 import re
-from typing import Optional, List, Dict, Any
-from pathlib import Path
+import subprocess
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ class FirewallManager:
     
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
-        self._rule_cache: Dict[str, Dict] = {}
+        self._rule_cache: dict[str, dict] = {}
         self._refresh_cache()
     
     def _refresh_cache(self):
@@ -35,7 +34,7 @@ class FirewallManager:
             logger.warning(f"Could not refresh firewall cache: {e}")
             self._rule_cache = {}
     
-    def _get_all_rules(self) -> Dict[str, Dict]:
+    def _get_all_rules(self) -> dict[str, dict]:
         """Get all existing Network Guardian firewall rules."""
         rules = {}
         try:
@@ -66,7 +65,7 @@ class FirewallManager:
         
         return rules
     
-    def _run_netsh(self, args: List[str]) -> bool:
+    def _run_netsh(self, args: list[str]) -> bool:
         """Execute netsh command."""
         if self.dry_run:
             logger.info(f"[DRY RUN] netsh {' '.join(args)}")
@@ -234,7 +233,7 @@ class FirewallManager:
         rule_name = f"{self.WHITELIST_PREFIX}{ip.replace('.', '_').replace(':', '_')}"
         return any(rule_name in name for name in self._rule_cache.keys())
     
-    def get_quarantined_ips(self) -> List[str]:
+    def get_quarantined_ips(self) -> list[str]:
         """Get list of all quarantined IPs."""
         ips = set()
         for name in self._rule_cache:
@@ -246,7 +245,7 @@ class FirewallManager:
                     ips.add(ip)
         return list(ips)
     
-    def get_whitelisted_ips(self) -> List[str]:
+    def get_whitelisted_ips(self) -> list[str]:
         """Get list of all whitelisted IPs."""
         ips = set()
         for name in self._rule_cache:
@@ -271,7 +270,7 @@ class FirewallManager:
         
         return False
     
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get firewall manager status."""
         return {
             "quarantined_count": len(self.get_quarantined_ips()),
@@ -282,7 +281,7 @@ class FirewallManager:
         }
 
 
-def create_firewall_manager(dry_run: bool = False) -> Optional[FirewallManager]:
+def create_firewall_manager(dry_run: bool = False) -> FirewallManager | None:
     """Factory function to create firewall manager."""
     if sys.platform != "win32":
         logger.warning("FirewallManager only works on Windows")
@@ -299,8 +298,8 @@ def create_firewall_manager(dry_run: bool = False) -> Optional[FirewallManager]:
 
 
 if __name__ == "__main__":
-    import sys
     import re
+    import sys
     logging.basicConfig(level=logging.INFO)
     
     fw = create_firewall_manager(dry_run=True)

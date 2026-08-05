@@ -3,28 +3,28 @@
 Network Guardian - Portable Version with Stealth Mode, System Tray, Settings, and Actionable Alerts
 """
 
-import sys
-import signal
-import time
-import logging
 import argparse
-import threading
-import subprocess
+import logging
+import signal
+import sys
+import time
 from pathlib import Path
-from typing import Optional, Dict, Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from portable_config import PortableConfig, run_first_run_setup
-from capture_module import FlowCapture, create_capture
-from inference_engine import InferenceEngine, create_inference_engine
 from alert_manager import AlertManager, create_alert_manager
 from auto_upgrade import AutoUpgrader, create_auto_upgrader
-from system_tray import SystemTrayManager, create_tray_manager
-from settings_dialog import SettingsDialog, create_settings_dialog
-from toast_actions import ActionableToastManager, ToastActionHandler, create_toast_manager
+from capture_module import FlowCapture, create_capture
 from firewall_manager import FirewallManager, create_firewall_manager
+from inference_engine import InferenceEngine, create_inference_engine
+from portable_config import PortableConfig, run_first_run_setup
+from system_tray import SystemTrayManager, create_tray_manager
+from toast_actions import (
+    ActionableToastManager,
+    ToastActionHandler,
+    create_toast_manager,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -48,14 +48,14 @@ class NetworkGuardian:
         self.app_dir = config.app_dir
         
         # Components
-        self.capture: Optional[FlowCapture] = None
-        self.engine: Optional[InferenceEngine] = None
-        self.alert_mgr: Optional[AlertManager] = None
-        self.upgrader: Optional[AutoUpgrader] = None
-        self.tray: Optional[SystemTrayManager] = None
-        self.toast_mgr: Optional[ActionableToastManager] = None
-        self.firewall: Optional[FirewallManager] = None
-        self.toast_handler: Optional[ToastActionHandler] = None
+        self.capture: FlowCapture | None = None
+        self.engine: InferenceEngine | None = None
+        self.alert_mgr: AlertManager | None = None
+        self.upgrader: AutoUpgrader | None = None
+        self.tray: SystemTrayManager | None = None
+        self.toast_mgr: ActionableToastManager | None = None
+        self.firewall: FirewallManager | None = None
+        self.toast_handler: ToastActionHandler | None = None
         
         # State
         self.running = False
@@ -391,7 +391,7 @@ class NetworkGuardian:
                 self.alert_mgr.telegram.send_telegram(
                     f"✅ <b>Model zaktualizowany</b> do wersji <code>v{new_version}</code>"
                 )
-            logger.info(f"✅ Modele przeładowane pomyślnie")
+            logger.info("✅ Modele przeładowane pomyślnie")
         except Exception as e:
             logger.error(f"❌ Błąd przeładowania modeli: {e}")
     

@@ -5,19 +5,17 @@ Checks for new model versions, downloads, verifies SHA256, and hot-swaps models.
 Also handles initial model download on first run.
 """
 
-import requests
 import hashlib
-import joblib
+import logging
 import threading
 import time
-import logging
-import os
-import shutil
-import sys
-from pathlib import Path
-from typing import Optional, Callable, Dict, Any, List
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +27,8 @@ class ModelManifest:
     model_url: str
     scaler_url: str
     encoders_url: str
-    feature_names_url: Optional[str] = None
-    threat_classifier_url: Optional[str] = None
+    feature_names_url: str | None = None
+    threat_classifier_url: str | None = None
     sha256_model: str = ""
     sha256_scaler: str = ""
     sha256_encoders: str = ""
@@ -41,7 +39,7 @@ class ModelManifest:
     released_at: str = ""
     
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> 'ModelManifest':
+    def from_json(cls, data: dict[str, Any]) -> 'ModelManifest':
         return cls(**data)
 
 
@@ -63,7 +61,7 @@ class ModelDownloader:
         self,
         model_dir: Path,
         manifest_url: str,
-        progress_callback: Optional[Callable[[str, float], None]] = None,
+        progress_callback: Callable[[str, float], None] | None = None,
         max_retries: int = 3,
         retry_delay: int = 5
     ):
@@ -153,7 +151,7 @@ class ModelDownloader:
                 return True
         return False
     
-    def _download_and_verify(self, url: str, expected_sha256: str, fname: str) -> Optional[Path]:
+    def _download_and_verify(self, url: str, expected_sha256: str, fname: str) -> Path | None:
         """Download single file with retries and verify SHA256."""
         tmp_path = self.model_dir / f".tmp_{fname}"
         
@@ -221,8 +219,8 @@ class AutoUpgrader:
         manifest_url: str,
         model_dir: Path,
         current_app_version: str = "1.0.0",
-        on_upgrade: Optional[Callable[[str], None]] = None,
-        on_progress: Optional[Callable[[str, float], None]] = None,
+        on_upgrade: Callable[[str], None] | None = None,
+        on_progress: Callable[[str, float], None] | None = None,
         check_interval_hours: int = 6,
         max_retries: int = 3,
         retry_delay: int = 60
@@ -236,9 +234,9 @@ class AutoUpgrader:
         self.retry_delay = retry_delay
         
         self._stop_event = threading.Event()
-        self._thread: Optional[threading.Thread] = None
-        self._last_check: Optional[datetime] = None
-        self._last_manifest: Optional[ModelManifest] = None
+        self._thread: threading.Thread | None = None
+        self._last_check: datetime | None = None
+        self._last_manifest: ModelManifest | None = None
         self._upgrade_in_progress = False
         
         # Model downloader
@@ -355,7 +353,7 @@ class AutoUpgrader:
         finally:
             self._upgrade_in_progress = False
     
-    def _fetch_manifest(self) -> Optional[ModelManifest]:
+    def _fetch_manifest(self) -> ModelManifest | None:
         """Fetch and parse model manifest."""
         try:
             resp = requests.get(self.manifest_url, timeout=30)
@@ -396,7 +394,7 @@ class AutoUpgrader:
         except Exception:
             return True
     
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get upgrader status."""
         return {
             'running': self._thread is not None and self._thread.is_alive(),
@@ -412,7 +410,7 @@ class AutoUpgrader:
         """Force an immediate upgrade check."""
         return self.check_and_upgrade(force=True)
     
-    def download_initial_models(self, progress_callback: Optional[Callable] = None) -> bool:
+    def download_initial_models(self, progress_callback: Callable | None = None) -> bool:
         """Download models on first run."""
         logger.info("📥 Pierwsze uruchomienie - pobieranie modeli...")
         

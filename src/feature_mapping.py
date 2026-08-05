@@ -4,9 +4,6 @@ Task 1: Analyze UNSW-NB15 Feature Mapping for nfstream
 Maps nfstream flow features to the 49 features expected by trained models.
 """
 
-from nfstream import NFStreamer
-import pandas as pd
-import numpy as np
 
 # UNSW-NB15 feature names (from training script + literature)
 UNSW_NB15_FEATURES = [
@@ -136,7 +133,7 @@ def analyze_nfstream_features():
     # Check coverage
     covered = set(v for v in NFSTREAM_TO_UNSW.values() if v)
     missing = set(UNSW_NB15_FEATURES) - covered
-    print(f"\n🔍 MISSING UNSW FEATURES (need custom computation):")
+    print("\n🔍 MISSING UNSW FEATURES (need custom computation):")
     for feat in sorted(missing):
         print(f"   - {feat}")
     
@@ -145,8 +142,6 @@ def analyze_nfstream_features():
 
 def get_nfstream_available_attrs():
     """Get actual nfstream flow attributes by inspecting the class."""
-    from nfstream import NFStreamer
-    import inspect
     
     # Get NFStreamer attributes
     print("\n🔬 NFStreamer class inspection:")

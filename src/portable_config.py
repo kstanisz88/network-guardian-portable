@@ -5,13 +5,12 @@ Handles first-run setup UI and persistent config storage.
 """
 
 import json
-import os
 import sys
-from pathlib import Path
-from typing import Dict, Any, Optional
-import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
 import threading
+import tkinter as tk
+from pathlib import Path
+from tkinter import messagebox, ttk
+from typing import Any
 
 
 class PortableConfig:
@@ -33,7 +32,7 @@ class PortableConfig:
         
         self.config_path = self.app_dir / self.CONFIG_FILENAME
         self.models_dir = self.app_dir / "models"
-        self._config: Dict[str, Any] = {}
+        self._config: dict[str, Any] = {}
         self._load()
     
     def _load(self):
@@ -47,7 +46,7 @@ class PortableConfig:
         else:
             self._config = self._default_config()
     
-    def _default_config(self) -> Dict[str, Any]:
+    def _default_config(self) -> dict[str, Any]:
         """Return default configuration."""
         return {
             "first_run": True,
@@ -124,23 +123,23 @@ class PortableConfig:
         val[keys[-1]] = value
         self.save()
     
-    def get_telegram_config(self) -> Dict[str, Any]:
+    def get_telegram_config(self) -> dict[str, Any]:
         """Get telegram configuration."""
         return self._config.get("telegram", {})
     
-    def get_alerts_config(self) -> Dict[str, Any]:
+    def get_alerts_config(self) -> dict[str, Any]:
         """Get alerts configuration."""
         return self._config.get("alerts", {})
     
-    def get_network_config(self) -> Dict[str, Any]:
+    def get_network_config(self) -> dict[str, Any]:
         """Get network configuration."""
         return self._config.get("network", {})
     
-    def get_model_config(self) -> Dict[str, Any]:
+    def get_model_config(self) -> dict[str, Any]:
         """Get model configuration."""
         return self._config.get("model", {})
     
-    def get_upgrade_config(self) -> Dict[str, Any]:
+    def get_upgrade_config(self) -> dict[str, Any]:
         """Get upgrade configuration."""
         return self._config.get("upgrade", {})
 
@@ -375,7 +374,7 @@ class FirstRunSetupUI:
                     self.root.after(0, lambda: self.test_result_var.set("✅ OK - Sprawdź Telegram!"))
                 else:
                     self.root.after(0, lambda: self.test_result_var.set(f"❌ Send failed: {resp.status_code}"))
-            except Exception as e:
+            except Exception:
                 self.root.after(0, lambda: self.test_result_var.set(f"❌ Error: {e}"))
         
         threading.Thread(target=test, daemon=True).start()

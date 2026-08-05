@@ -4,11 +4,9 @@ System Tray Manager for Stealth Mode
 Handles system tray icon, menu, and window visibility.
 """
 
-import sys
-import threading
 import logging
-from typing import Callable, Optional, Dict, Any
-from pathlib import Path
+import threading
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +48,8 @@ class SystemTrayManager:
         self.on_exit = on_exit
         self.get_recent_alerts = get_recent_alerts
         
-        self.icon: Optional[pystray.Icon] = None
-        self.tray_thread: Optional[threading.Thread] = None
+        self.icon: pystray.Icon | None = None
+        self.tray_thread: threading.Thread | None = None
         self._running = False
         self._window_visible = False
         
@@ -196,7 +194,7 @@ class SystemTrayManager:
         """Show IP input dialog using tkinter."""
         try:
             import tkinter as tk
-            from tkinter import simpledialog, messagebox
+            from tkinter import messagebox, simpledialog
             
             # Create hidden root
             root = tk.Tk()
@@ -305,7 +303,7 @@ class SystemTrayManager:
                 logger.error(f"Tray notify error: {e}")
 
 
-def create_tray_manager(**kwargs) -> Optional[SystemTrayManager]:
+def create_tray_manager(**kwargs) -> SystemTrayManager | None:
     """Factory function to create tray manager."""
     if not PYSTRAY_AVAILABLE:
         logger.warning("pystray not installed, tray disabled")

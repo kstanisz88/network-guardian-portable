@@ -5,15 +5,13 @@ Uses Windows Runtime (winrt) for actionable toasts on Windows 10+.
 Fallback to win10toast for older systems.
 """
 
-import sys
-import logging
-import threading
 import json
-import uuid
-from typing import Callable, Optional, Dict, Any, List
-from pathlib import Path
+import logging
+import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +19,8 @@ logger = logging.getLogger(__name__)
 WINRT_AVAILABLE = False
 try:
     if sys.platform == "win32":
-        import winrt.windows.ui.notifications as notifications
-        import winrt.windows.data.xml.dom as dom
+        from winrt.windows.data.xml import dom
+        from winrt.windows.ui import notifications
         WINRT_AVAILABLE = True
 except ImportError:
     pass
@@ -50,11 +48,11 @@ class ToastNotification:
     """Toast notification with actions."""
     title: str
     message: str
-    actions: List[ToastAction]
+    actions: list[ToastAction]
     tag: str = ""
     group: str = ""
     expires_ms: int = 30000
-    payload: Dict[str, Any] = None
+    payload: dict[str, Any] = None
 
 
 class ActionableToastManager:
@@ -66,7 +64,7 @@ class ActionableToastManager:
     def __init__(
         self,
         app_id: str = "NetworkGuardian",
-        on_action: Callable[[str, Dict[str, Any]], None] = None,
+        on_action: Callable[[str, dict[str, Any]], None] = None,
         enable_actions: bool = True
     ):
         self.app_id = app_id
@@ -85,7 +83,7 @@ class ActionableToastManager:
             logger.warning("No toast notification library available")
         
         # Action handlers registry
-        self.action_handlers: Dict[str, Callable] = {}
+        self.action_handlers: dict[str, Callable] = {}
         
         # Register COM activator for action handling
         if self.enable_actions:
@@ -114,7 +112,7 @@ class ActionableToastManager:
         # For now, we'll use a simpler approach with protocol handling
         logger.info("Toast action handling via protocol (simplified)")
     
-    def register_action_handler(self, action_id: str, handler: Callable[[Dict[str, Any]], None]):
+    def register_action_handler(self, action_id: str, handler: Callable[[dict[str, Any]], None]):
         """Register handler for specific action."""
         self.action_handlers[action_id] = handler
         logger.debug(f"Registered handler for action: {action_id}")
@@ -206,7 +204,7 @@ class ActionableToastManager:
             logger.error(f"win10toast failed: {e}")
             return False
     
-    def handle_action(self, action_id: str, payload: Dict[str, Any]):
+    def handle_action(self, action_id: str, payload: dict[str, Any]):
         """Handle toast action callback."""
         logger.info(f"Toast action triggered: {action_id}")
         
@@ -224,7 +222,7 @@ class ActionableToastManager:
         threat_type: str,
         threat_category: str,
         confidence: float,
-        flow_info: Dict[str, Any],
+        flow_info: dict[str, Any],
         on_quarantine: Callable = None,
         on_whitelist: Callable = None,
         on_dismiss: Callable = None,
@@ -324,7 +322,7 @@ class ToastActionHandler:
         self.whitelist = whitelist_manager
         self.settings_callback = settings_callback
     
-    def handle_quarantine(self, payload: Dict[str, Any]):
+    def handle_quarantine(self, payload: dict[str, Any]):
         """Quarantine source IP."""
         flow_info = payload.get("flow_info", {})
         src_ip = flow_info.get("src_ip")
@@ -340,7 +338,7 @@ class ToastActionHandler:
             except Exception as e:
                 logger.error(f"Quarantine error: {e}")
     
-    def handle_whitelist(self, payload: Dict[str, Any]):
+    def handle_whitelist(self, payload: dict[str, Any]):
         """Add source IP to whitelist."""
         flow_info = payload.get("flow_info", {})
         src_ip = flow_info.get("src_ip")
@@ -352,11 +350,11 @@ class ToastActionHandler:
             except Exception as e:
                 logger.error(f"Whitelist error: {e}")
     
-    def handle_dismiss(self, payload: Dict[str, Any]):
+    def handle_dismiss(self, payload: dict[str, Any]):
         """Dismiss alert."""
         logger.info("Alert dismissed by user")
     
-    def handle_settings(self, payload: Dict[str, Any]):
+    def handle_settings(self, payload: dict[str, Any]):
         """Open settings."""
         logger.info("Opening settings from toast")
         # This would trigger the settings dialog
@@ -365,7 +363,7 @@ class ToastActionHandler:
 def create_toast_manager(
     on_action: Callable = None,
     enable_actions: bool = True
-) -> Optional[ActionableToastManager]:
+) -> ActionableToastManager | None:
     """Factory function to create toast manager."""
     if not WINRT_AVAILABLE and not WIN10TOAST_AVAILABLE:
         logger.warning("No toast notification library available")

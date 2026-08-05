@@ -4,12 +4,13 @@ Settings Dialog for Network Guardian
 Tabbed interface for all configuration options.
 """
 
-import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
-import threading
 import logging
-from typing import Callable, Optional, Dict, Any
+import threading
+import tkinter as tk
+from collections.abc import Callable
 from pathlib import Path
+from tkinter import messagebox, scrolledtext, ttk
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,8 @@ class SettingsDialog:
         self.on_save = on_save
         self.on_test_telegram = on_test_telegram
         self.parent = parent
-        self.window: Optional[tk.Toplevel] = None
-        self._variables: Dict[str, Any] = {}
+        self.window: tk.Toplevel | None = None
+        self._variables: dict[str, Any] = {}
         self._test_result_var = None
     
     def show(self):
@@ -403,7 +404,7 @@ oparty na uczeniu maszynowym (ML).
                     self.window.after(0, lambda: self._test_result_var.set("✅ OK - Sprawdź Telegram!"))
                 else:
                     self.window.after(0, lambda: self._test_result_var.set(f"❌ Send failed: {resp.status_code}"))
-            except Exception as e:
+            except Exception:
                 self.window.after(0, lambda: self._test_result_var.set(f"❌ Error: {e}"))
         
         threading.Thread(target=test, daemon=True).start()
@@ -479,9 +480,10 @@ if __name__ == "__main__":
     import logging
     logging.basicConfig(level=logging.INFO)
     
-    from portable_config import PortableConfig
-    from pathlib import Path
     import tempfile
+    from pathlib import Path
+
+    from portable_config import PortableConfig
     
     with tempfile.TemporaryDirectory() as tmpdir:
         config = PortableConfig(Path(tmpdir))

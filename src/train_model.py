@@ -4,18 +4,20 @@ Task 2: Create Inference Engine + Model Training
 Train ensemble model on NSL-KDD (proxy for UNSW-NB15 features) and create inference module.
 """
 
-import pandas as pd
-import numpy as np
-import joblib
 import warnings
+
+import joblib
+import numpy as np
+import pandas as pd
+
 warnings.filterwarnings('ignore')
 
+import lightgbm as lgb
+import xgboost as xgb
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, accuracy_score, f1_score
-import xgboost as xgb
-import lightgbm as lgb
 
 # ── 1. Load and prepare NSL-KDD data ──────────────────────────────────
 print("Loading NSL-KDD 20% training set...")
@@ -207,12 +209,12 @@ print("="*60)
 for name, metrics in results.items():
     print(f"  {name:<20} Acc: {metrics['accuracy']:.4f}  F1: {metrics['f1']:.4f}")
 
-print(f"\n📁 Models saved to models/:")
-print(f"   - rf_anomaly_model.pkl (binary ensemble)")
-print(f"   - rf_model.pkl, xgb_model.pkl, lgb_model.pkl (individual)")
-print(f"   - scaler.pkl")
-print(f"   - label_encoders.pkl")
-print(f"   - threat_classifier.pkl (multi-class)")
+print("\n📁 Models saved to models/:")
+print("   - rf_anomaly_model.pkl (binary ensemble)")
+print("   - rf_model.pkl, xgb_model.pkl, lgb_model.pkl (individual)")
+print("   - scaler.pkl")
+print("   - label_encoders.pkl")
+print("   - threat_classifier.pkl (multi-class)")
 
 print(f"\n📊 Feature names ({len(feature_names)}): {feature_names}")
 

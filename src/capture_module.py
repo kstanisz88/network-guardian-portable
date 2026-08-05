@@ -4,13 +4,13 @@ Task 3: Network Capture Module - nfstream wrapper for real-time flow capture
 Provides continuous flow capture with callback per flow.
 """
 
+import logging
 import threading
 import time
-import logging
-from typing import Callable, Dict, Any, Optional, List
-from dataclasses import dataclass
 from collections import deque
-from pathlib import Path
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 from nfstream import NFStreamer
 
@@ -49,7 +49,7 @@ class ConnectionTracker:
         
         self._lock = threading.Lock()
     
-    def update(self, flow: Dict[str, Any]) -> Dict[str, float]:
+    def update(self, flow: dict[str, Any]) -> dict[str, float]:
         """Update counters and return ct_* features for this flow."""
         now = time.time()
         src_ip = flow.get('src_ip', '')
@@ -130,7 +130,7 @@ class FlowCapture:
     def __init__(
         self,
         interface: str = "any",
-        callback: Callable[[Dict[str, Any]], None] = None,
+        callback: Callable[[dict[str, Any]], None] = None,
         bpf_filter: str = None,
         idle_timeout: int = 120,
         active_timeout: int = 1800,
@@ -160,15 +160,15 @@ class FlowCapture:
         self.bpf_filter = bpf_filter
         self.idle_timeout = idle_timeout
         self.active_timeout = active_timeout
-        self.max_flows = max_flows if max_flows >= 0 else 0
+        self.max_flows = max(max_flows, 0)
         self.enable_connection_tracking = enable_connection_tracking
         
         # Connection tracker for ct_* features
         self.tracker = ConnectionTracker(window_seconds=tracking_window) if enable_connection_tracking else None
         
         # NFStreamer
-        self._streamer: Optional[NFStreamer] = None
-        self._thread: Optional[threading.Thread] = None
+        self._streamer: NFStreamer | None = None
+        self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         
         # Stats
@@ -288,7 +288,7 @@ class FlowCapture:
         finally:
             logger.info("Capture loop ended")
     
-    def _update_stats(self, flow_dict: Dict[str, Any]):
+    def _update_stats(self, flow_dict: dict[str, Any]):
         """Update capture statistics."""
         now = time.time()
         self.stats.total_flows += 1
@@ -305,7 +305,7 @@ class FlowCapture:
         self.stats.bytes_processed += flow_dict.get('bidirectional_bytes', 0)
         self.stats.packets_processed += flow_dict.get('bidirectional_packets', 0)
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get current capture statistics."""
         uptime = time.time() - self.stats.start_time if self.stats.start_time > 0 else 0
         return {
@@ -353,7 +353,7 @@ if __name__ == "__main__":
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    def flow_handler(flow: Dict[str, Any]):
+    def flow_handler(flow: dict[str, Any]):
         print(f"Flow: {flow.get('src_ip')}:{flow.get('src_port')} -> "
               f"{flow.get('dst_ip')}:{flow.get('dst_port')} "
               f"({flow.get('protocol_name', 'N/A')}) "

@@ -4,15 +4,14 @@ Task 4: Alert Manager - Telegram + Windows Toast notifications
 Task 5: Response Advisor - Rule-based remediation steps per threat type
 """
 
-import requests
-import json
 import logging
 import time
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 from enum import Enum
+from typing import Any
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +31,9 @@ class Alert:
     threat_type: str
     threat_category: str
     confidence: float
-    flow_info: Dict[str, Any]
+    flow_info: dict[str, Any]
     timestamp: datetime
-    remediation_steps: List[str]
+    remediation_steps: list[str]
 
 
 class TelegramAlertManager:
@@ -115,14 +114,14 @@ class TelegramAlertManager:
         
         lines = [
             f"{icon} <b>NETWORK GUARDIAN ALERT</b> {icon}",
-            f"",
+            "",
             f"{cat_icon} <b>Kategoria:</b> {alert.threat_category.upper()}",
             f"🎯 <b>Typ ataku:</b> {alert.threat_type}",
             f"📊 <b>Pewność:</b> {alert.confidence:.1%}",
             f"📈 <b>Poziom:</b> {alert.level.value.upper()}",
             f"🕐 <b>Czas:</b> {alert.timestamp.strftime('%Y-%m-%d %H:%M:%S')}",
-            f"",
-            f"📡 <b>Szczegóły przepływu:</b>",
+            "",
+            "📡 <b>Szczegóły przepływu:</b>",
         ]
         
         flow = alert.flow_info
@@ -140,8 +139,8 @@ class TelegramAlertManager:
             lines.append(f"  • Czas trwania: {flow['duration_ms']} ms")
         
         if alert.remediation_steps:
-            lines.append(f"")
-            lines.append(f"🛠 <b>Zalecane działania:</b>")
+            lines.append("")
+            lines.append("🛠 <b>Zalecane działania:</b>")
             for i, step in enumerate(alert.remediation_steps[:5], 1):
                 lines.append(f"  {i}. {step}")
             if len(alert.remediation_steps) > 5:
@@ -344,7 +343,7 @@ class ResponseAdvisor:
         return cls.THREAT_SPECIFIC.get(threat_type.lower(), 'anomaly')
     
     @classmethod
-    def get_steps(cls, threat_type: str, threat_category: str = None) -> List[str]:
+    def get_steps(cls, threat_type: str, threat_category: str = None) -> list[str]:
         """Get remediation steps for threat type."""
         if threat_category is None:
             threat_category = cls.get_category(threat_type)
@@ -363,7 +362,7 @@ class ResponseAdvisor:
         steps = cls.get_steps(threat_type, threat_category)
         title = cls.get_title(cls.get_category(threat_type) if threat_category is None else threat_category)
         
-        lines = [f"\n🛠 <b>{title}</b>", f"📋 <b>Zalecane kroki:</b>"]
+        lines = [f"\n🛠 <b>{title}</b>", "📋 <b>Zalecane kroki:</b>"]
         for i, step in enumerate(steps, 1):
             lines.append(f"  {i}. {step}")
         return "\n".join(lines)
@@ -407,7 +406,7 @@ class AlertManager:
         self.advisor = ResponseAdvisor()
         
         # Alert history
-        self.alert_history: List[Alert] = []
+        self.alert_history: list[Alert] = []
         self.max_history = 1000
     
     def set_toast_manager(self, toast_mgr):
@@ -528,11 +527,11 @@ class AlertManager:
         
         return self.alert(test_prediction)
     
-    def get_recent_alerts(self, limit: int = 50) -> List[Alert]:
+    def get_recent_alerts(self, limit: int = 50) -> list[Alert]:
         """Get recent alerts."""
         return self.alert_history[-limit:]
     
-    def get_alert_stats(self) -> Dict[str, Any]:
+    def get_alert_stats(self) -> dict[str, Any]:
         """Get alert statistics."""
         if not self.alert_history:
             return {'total': 0}

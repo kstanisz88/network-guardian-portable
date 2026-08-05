@@ -4,14 +4,16 @@ Task 2: Inference Engine - Production-ready model loading and prediction
 Used by the main Network Guardian application.
 """
 
+import warnings
+
 import joblib
 import numpy as np
-import warnings
+
 warnings.filterwarnings('ignore')
 
-from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -22,7 +24,7 @@ class PredictionResult:
     threat_type: str           # 'normal', 'anomaly', or specific attack type
     threat_category: str       # 'dos', 'probe', 'r2l', 'u2r', 'normal'
     model_used: str            # which model made the prediction
-    flow_features: Dict[str, float]  # key features for alerting
+    flow_features: dict[str, float]  # key features for alerting
 
 
 class InferenceEngine:
@@ -98,12 +100,12 @@ class InferenceEngine:
         self.feature_names = joblib.load(self.model_dir / "feature_names.pkl")
         
         print(f"   ✅ Loaded ensemble: {type(self.ensemble_model).__name__}")
-        print(f"   ✅ Loaded individual models: RF, XGB, LGBM")
+        print("   ✅ Loaded individual models: RF, XGB, LGBM")
         print(f"   ✅ Loaded scaler, encoders, {len(self.feature_names)} feature names")
         if self.threat_classifier:
             print(f"   ✅ Loaded threat classifier: {type(self.threat_classifier).__name__}")
     
-    def preprocess_flow(self, flow_dict: Dict[str, Any]) -> np.ndarray:
+    def preprocess_flow(self, flow_dict: dict[str, Any]) -> np.ndarray:
         """
         Convert nfstream flow dict to model input vector.
         
@@ -130,7 +132,7 @@ class InferenceEngine:
         arr = np.array(feature_vector).reshape(1, -1)
         return self.scaler.transform(arr)
     
-    def _map_flow_feature(self, feature_name: str, flow: Dict[str, Any]) -> Any:
+    def _map_flow_feature(self, feature_name: str, flow: dict[str, Any]) -> Any:
         """
         Map nfstream flow attributes to NSL-KDD feature names.
         """
@@ -200,7 +202,7 @@ class InferenceEngine:
         }
         return state_map.get(nfstream_state, 'OTH')
     
-    def predict(self, flow_dict: Dict[str, Any]) -> PredictionResult:
+    def predict(self, flow_dict: dict[str, Any]) -> PredictionResult:
         """
         Predict anomaly for a single flow.
         
@@ -249,7 +251,7 @@ class InferenceEngine:
             flow_features=key_features
         )
     
-    def predict_batch(self, flows: List[Dict[str, Any]]) -> List[PredictionResult]:
+    def predict_batch(self, flows: list[dict[str, Any]]) -> list[PredictionResult]:
         """Predict anomalies for multiple flows (more efficient)."""
         results = []
         for flow in flows:
@@ -291,7 +293,7 @@ if __name__ == "__main__":
     }
     
     result = engine.predict(test_flow)
-    print(f"\n🧪 Test prediction:")
+    print("\n🧪 Test prediction:")
     print(f"   Anomaly: {result.is_anomaly}")
     print(f"   Confidence: {result.confidence:.4f}")
     print(f"   Threat type: {result.threat_type}")
