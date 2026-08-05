@@ -2,6 +2,8 @@
 """Placeholder tests for Network Guardian - ensures pytest has something to run"""
 
 import pytest
+from pathlib import Path
+import sys
 
 
 def test_placeholder():
@@ -11,12 +13,15 @@ def test_placeholder():
 
 def test_imports():
     """Test that main modules can be imported"""
-    from src import main
-    from src import capture_module
-    from src import inference_engine
-    from src import alert_manager
-    from src import auto_upgrade
-    from src import portable_config
+    sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+    
+    # Test that modules can be imported without error
+    import main
+    import capture_module
+    import inference_engine
+    import alert_manager
+    import auto_upgrade
+    import portable_config
     assert True
 
 
