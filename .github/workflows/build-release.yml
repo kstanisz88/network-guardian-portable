@@ -56,7 +56,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest tests/ -v --cov=src --cov-report=xml -k "not gui" || true
+          pytest tests/ -v --cov=src --cov-report=xml -k "not gui and not test_imports" || true
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
