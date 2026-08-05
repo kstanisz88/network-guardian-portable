@@ -1,0 +1,351 @@
+name: Build & Release Network Guardian Portable
+
+on:
+  push:
+    tags:
+      - 'v*'           # Trigger on version tags (v1.0.0, v1.1.0, etc.)
+  workflow_dispatch:   # Manual trigger
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write      # For creating releases
+  pages: write         # For GitHub Pages (manifest hosting)
+  id-token: write      # For OIDC token
+
+env:
+  PYTHON_VERSION: '3.11'
+  PROJECT_NAME: 'NetworkGuardian'
+
+jobs:
+  # ─── 1. Lint & Test ──────────────────────────────────────────────────
+  lint-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov black ruff mypy
+
+      - name: Run linting (ruff)
+        run: |
+          ruff check src/
+          ruff format --check src/
+
+      - name: Type checking (mypy)
+        run: |
+          mypy src/ --ignore-missing-imports || true
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v --cov=src --cov-report=xml || true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+
+  # ─── 2. Build Windows Portable Executable ────────────────────────────
+  build-windows:
+    name: Build Windows Portable .exe
+    runs-on: windows-latest
+    needs: lint-test
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for version detection
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          architecture: 'x64'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Train models (for build)
+        run: |
+          python src/train_model.py
+        shell: pwsh
+
+      - name: Verify model files exist
+        run: |
+          $models = @(
+            "models/rf_anomaly_model.pkl",
+            "models/scaler.pkl",
+            "models/label_encoders.pkl",
+            "models/feature_names.pkl"
+          )
+          foreach ($m in $models) {
+            if (-not (Test-Path $m)) {
+              Write-Error "Missing model file: $m"
+              exit 1
+            }
+            $size = (Get-Item $m).Length / 1MB
+            Write-Host "✅ $m ($([math]::Round($size,1)) MB)"
+          }
+        shell: pwsh
+
+      - name: Build portable executable with PyInstaller
+        run: |
+          python build.py build
+        shell: pwsh
+
+      - name: Verify executable
+        run: |
+          $exe = "dist/${env:PROJECT_NAME}.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Executable not found at $exe"
+            exit 1
+          }
+          $size = (Get-Item $exe).Length / 1MB
+          Write-Host "✅ Executable: $exe ($([math]::Round($size,1)) MB)"
+          
+          # Test basic run
+          & $exe --version
+        shell: pwsh
+
+      - name: Generate manifest with SHA256
+        run: |
+          python build.py manifest
+        shell: pwsh
+
+      - name: Create portable package
+        run: |
+          python build.py package
+        shell: pwsh
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: network_guardian-portable
+          path: dist/${{ env.PROJECT_NAME }}.exe
+          retention-days: 30
+
+      - name: Upload portable package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: network_guardian-portable-package
+          path: NetworkGuardian_Portable.zip
+          retention-days: 30
+
+      - name: Upload manifest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model_manifest
+          path: model_manifest.json
+          retention-days: 30
+
+      - name: Upload model files artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-files
+          path: models/*.pkl
+          retention-days: 30
+
+  # ─── 3. Create GitHub Release ───────────────────────────────────────
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-windows
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release_assets
+          cp artifacts/network_guardian-portable/NetworkGuardian.exe release_assets/
+          cp artifacts/network_guardian-portable-package/NetworkGuardian_Portable.zip release_assets/
+          cp artifacts/model_manifest/model_manifest.json release_assets/
+          cp artifacts/model-files/*.pkl release_assets/
+          
+          # Create checksums
+          cd release_assets
+          sha256sum * > SHA256SUMS.txt
+          ls -la
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG=${GITHUB_REF_NAME}
+          
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" -20)
+          fi
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Network Guardian Portable ${{ github.ref_name }}"
+          body: |
+            ## 🛡 Network Guardian Portable ${{ github.ref_name }}
+            
+            **Lekka, przenośna wersja** - nie wymaga instalacji, konfiguracja przez GUI przy pierwszym uruchomieniu.
+            
+            ### 📦 Assets
+            - `NetworkGuardian.exe` — Samodzielny plik wykonywalny Windows
+            - `NetworkGuardian_Portable.zip` — Paczka gotowa do dystrybucji (exe + config + README)
+            - `model_manifest.json` — Manifest auto-aktualizacji z SHA256
+            - `*.pkl` — Pliki modeli (ensemble + preprocesory)
+            - `SHA256SUMS.txt` — Sumy kontrolne integralności
+            
+            ### 🚀 Instalacja (Portable)
+            1. Pobierz `NetworkGuardian_Portable.zip` i rozpakuj
+            2. Uruchom `NetworkGuardian.exe`
+            3. Przy pierwszym uruchomieniu otworzy się **okno konfiguracji GUI**
+            4. Wypełnij:
+               - **Bot Token** (z @BotFather w Telegram)
+               - **Chat ID** (z @userinfobot w Telegram)
+            5. Kliknij **"Zapisz i uruchom"**
+            4. Program automatycznie pobierze modele ML i zacznie monitorować
+            
+            ### 🔄 Auto-Aktualizacje
+            Program sprawdza aktualizacje modeli co 6 godzin automatycznie.
+            Skonfiguruj w `config.yaml` (tworzonym automatycznie):
+            ```yaml
+            upgrade:
+              manifest_url: "https://raw.githubusercontent.com/${{ github.repository }}/main/model_manifest.json"
+            ```
+            
+            ### 📝 Changelog
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            **Pełny changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.prev_tag }}...${{ github.ref_name }}
+          files: |
+            release_assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── 4. Deploy Manifest to GitHub Pages ─────────────────────────────
+  deploy-manifest:
+    name: Deploy Manifest to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Download manifest artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: model_manifest
+          path: manifest
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Prepare manifest for Pages
+        run: |
+          mkdir -p _site
+          cp manifest/model_manifest.json _site/
+          # Also copy to versioned path
+          VERSION=$(cat manifest/model_manifest.json | jq -r .version)
+          mkdir -p _site/v$VERSION
+          cp manifest/model_manifest.json _site/v$VERSION/
+          echo "Manifest version: $VERSION"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ─── 5. Notify on Success ───────────────────────────────────────────
+  notify:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [create-release, deploy-manifest]
+    if: always()
+    steps:
+      - name: Check job statuses
+        run: |
+          echo "lint-test: ${{ needs.lint-test.result }}"
+          echo "build-windows: ${{ needs.build-windows.result }}"
+          echo "create-release: ${{ needs.create-release.result }}"
+          echo "deploy-manifest: ${{ needs.deploy-manifest.result }}"
+
+      - name: Send Telegram notification (optional)
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        run: |
+          STATUS="${{ job.status }}"
+          VERSION="${{ github.ref_name }}"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${VERSION}"
+          
+          if [ "$STATUS" = "success" ]; then
+            MESSAGE="✅ <b>Network Guardian Portable $VERSION released!</b>
+            📦 <a href='$RELEASE_URL'>Download</a>
+            🔄 Manifest: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/model_manifest.json"
+          else
+            MESSAGE="❌ <b>Network Guardian Portable $VERSION build FAILED</b>
+            Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode="HTML" \
+            -d text="$MESSAGE"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+  # ─── 6. Cleanup Old Artifacts ───────────────────────────────────────
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Delete old workflow runs (keep last 10)
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 30
+          keep_minimum_runs: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

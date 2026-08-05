@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.spec
+
+# Model files (large, handled by GitHub Releases)
+models/*.pkl
+!models/.gitkeep
+
+# Logs
+*.log
+network_guardian.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NSSM
+nssm.exe
+nssm.zip
+nssm-2.24/
+
+# Manifest (generated)
+model_manifest.json
+
+# Test artifacts
+.coverage
+coverage.xml
+.pytest_cache/
+.tox/
+
+# Local config (copy to config.yaml and edit)
+# config.yaml

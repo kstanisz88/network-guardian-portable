@@ -1,0 +1,3 @@
+# This file ensures the models/ directory is tracked in git
+# Actual model files (*.pkl) are distributed via GitHub Releases
+# and are listed in .gitignore

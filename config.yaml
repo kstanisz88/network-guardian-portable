@@ -1,0 +1,39 @@
+# Network Guardian Configuration
+# Fill in your Telegram bot token and chat ID below
+
+network:
+  interface: "auto"           # "auto" for auto-detect, or specific interface name (e.g., "Ethernet", "Wi-Fi")
+  bpf_filter: ""              # Optional BPF filter (e.g., "tcp port 80 or tcp port 443")
+  idle_timeout: 120           # Flow idle timeout in seconds
+  active_timeout: 1800        # Flow active timeout in seconds
+  enable_connection_tracking: true  # Enable ct_* feature computation
+  tracking_window: 120        # Connection tracking window in seconds
+
+model:
+  threshold: 0.6              # Anomaly confidence threshold (0.0-1.0)
+  model_dir: "models"         # Directory containing model artifacts
+  auto_reload_on_upgrade: true
+
+alerts:
+  telegram_bot_token: ""      # Your Telegram bot token (from @BotFather)
+  telegram_chat_id: ""        # Your chat ID (from @userinfobot)
+  enable_telegram: true
+  enable_windows_toast: true
+  cooldown_seconds: 60        # Minimum time between alerts
+  min_confidence: 0.6         # Minimum confidence to trigger alert
+
+upgrade:
+  manifest_url: "https://raw.githubusercontent.com/kstanisz88/anomaly-detector/main/model_manifest.json"
+  check_interval_hours: 6
+  enabled: true
+
+logging:
+  level: "INFO"
+  file: "network_guardian.log"
+  max_size_mb: 10
+  backup_count: 5
+
+service:
+  name: "NetworkGuardian"
+  display_name: "Network Guardian - ML Network Anomaly Detector"
+  description: "Lightweight ML-based Network Anomaly Detector with Auto-Upgrade"

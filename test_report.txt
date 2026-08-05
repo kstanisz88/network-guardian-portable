@@ -1,0 +1,19 @@
+
+============================================================
+📋 RAPORT TESTÓW NETWORK GUARDIAN
+============================================================
+⏱️  Czas trwania: 0.0s
+✅ Testy zaliczone: 4/4
+📊 Flows przechwycone: 0
+🚨 Anomalie wykryte: 0
+📱 Alerty wysłane: 0
+🎯 Ataki zasymulowane: port_scan, syn_flood, udp_flood, brute_force
+
+============================================================
+📝 SZCZEGÓŁY:
+
+✅ Żadnych błędów krytycznych
+
+============================================================
+📊 WERDYKT: ✅ WSZYSTKIE TESTY ZALICZONE
+============================================================

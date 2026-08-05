@@ -1,0 +1,34 @@
+# Network Guardian - Python Dependencies
+# Core ML & Data
+scikit-learn>=1.3.0
+joblib>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+xgboost>=2.0.0
+lightgbm>=4.0.0
+
+# Network Capture
+nfstream>=6.6.0
+
+# HTTP & Config
+requests>=2.31.0
+pyyaml>=6.0.0
+
+# System
+psutil>=5.9.0
+
+# Windows Notifications
+win10toast>=0.9.0; sys_platform == "win32"
+
+# Build
+pyinstaller>=6.0.0
+
+# Testing & Linting (dev)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+ruff>=0.1.0
+mypy>=1.5.0
+
+# Type hints
+typing-extensions>=4.8.0
