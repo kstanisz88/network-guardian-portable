@@ -204,14 +204,13 @@ jobs:
           CURRENT_TAG=${GITHUB_REF_NAME}
           
           if [ -n "$PREV_TAG" ]; then
-            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD 2>/dev/null || echo "- Initial release")
           else
-            CHANGELOG=$(git log --pretty=format:"- %s (%h)" -20)
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" -20 2>/dev/null || echo "- Initial release")
           fi
           
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Use printf to handle multiline properly
+          printf "changelog<<EOF\n%s\nEOF\n" "$CHANGELOG" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
