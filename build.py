@@ -30,6 +30,47 @@ def build_executable():
 
 block_cipher = None
 
+# Find openblas libraries - dynamic path detection for cross-platform
+import glob
+import os
+import sys
+import site
+
+# Get site-packages directories dynamically
+site_packages_dirs = site.getsitepackages()
+if hasattr(sys, 'prefix'):
+    site_packages_dirs.append(os.path.join(sys.prefix, 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}', 'site-packages'))
+
+# Also check virtual environment
+venv_path = os.environ.get('VIRTUAL_ENV')
+if venv_path:
+    site_packages_dirs.append(os.path.join(venv_path, 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}', 'site-packages'))
+
+# Find openblas files in all site-packages directories
+openblas_files = []
+for sp_dir in site_packages_dirs:
+    for pattern in [
+        os.path.join(sp_dir, 'numpy.libs', 'libscipy_openblas64_*.so'),
+        os.path.join(sp_dir, 'numpy.libs', 'libscipy_openblas64_*.dll'),
+        os.path.join(sp_dir, 'scipy.libs', 'libscipy_openblas*.so'),
+        os.path.join(sp_dir, 'scipy.libs', 'libscipy_openblas*.dll'),
+    ]:
+        openblas_files.extend(glob.glob(pattern))
+
+# Determine destination folder based on source
+openblas_datas = []
+for f in openblas_files:
+    if 'numpy' in f:
+        openblas_datas.append((f, 'numpy.libs'))
+    elif 'scipy' in f:
+        openblas_datas.append((f, 'scipy.libs'))
+    else:
+        openblas_datas.append((f, '.'))
+
+print(f"Found {len(openblas_datas)} openblas files:")
+for src, dst in openblas_datas:
+    print(f"  {src} -> {dst}")
+
 a = Analysis(
     ['src/main.py'],
     pathex=[],
@@ -45,7 +86,7 @@ a = Analysis(
         ('src/toast_actions.py', 'src'),
         ('src/firewall_manager.py', 'src'),
         ('config.yaml', '.'),
-    ],
+    ] + openblas_datas,
     hiddenimports=[
         'nfstream',
         'sklearn',
@@ -54,7 +95,14 @@ a = Analysis(
         'sklearn.model_selection',
         'joblib',
         'numpy',
+        'numpy.core',
+        'numpy.core.multiarray',
+        'numpy.lib',
+        'numpy.lib.format',
         'pandas',
+        'pandas.core',
+        'pandas.core.frame',
+        'pandas.core.series',
         'xgboost',
         'lightgbm',
         'requests',
@@ -80,6 +128,19 @@ a = Analysis(
         'os',
         'sys',
         'time',
+        'scipy',
+        'scipy.linalg',
+        'scipy.linalg.blas',
+        'scipy.linalg.lapack',
+        'scipy.special',
+        'scipy.stats',
+        'scipy.optimize',
+        'scipy.sparse',
+        'scipy.sparse.linalg',
+        'scipy.fft',
+        'scipy.signal',
+        'scipy.interpolate',
+        'scipy.ndimage',
         # Custom modules
         'portable_config',
         'capture_module',
@@ -103,9 +164,9 @@ a = Analysis(
     noarchive=False,
 )
 
-# Filter out large unnecessary binaries
+# Filter out large unnecessary binaries - KEEP scipy openblas
 a.binaries = [x for x in a.binaries if not any(
-    skip in x[0] for skip in ['mkl', 'openblas', 'libgfortran']
+    skip in x[0] for skip in ['mkl', 'libgfortran']
 )]
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
@@ -120,8 +181,8 @@ exe = EXE(
     name='NetworkGuardian',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,
-    upx=True,
+    strip=False,  # Don't strip - breaks numpy/scipy
+    upx=False,  # Don't use UPX - breaks shared libs
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,  # Console for logs
