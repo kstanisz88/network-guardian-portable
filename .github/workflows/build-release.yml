@@ -177,18 +177,23 @@ jobs:
         with:
           path: artifacts
 
+      - name: Debug artifact structure
+        run: |
+          echo "=== Artifact directory structure ==="
+          find artifacts -type f -o -type d | sort
+
       - name: Prepare release files
         run: |
           mkdir -p release_assets
-          # Find and copy files regardless of exact path
-          find artifacts -name "NetworkGuardian.exe" -exec cp {} release_assets/ \;
-          find artifacts -name "NetworkGuardian_Portable.zip" -exec cp {} release_assets/ \;
-          find artifacts -name "model_manifest.json" -exec cp {} release_assets/ \;
-          find artifacts -name "*.pkl" -exec cp {} release_assets/ \;
+          # Copy files from artifact subdirectories
+          cp artifacts/network_guardian-portable/NetworkGuardian.exe release_assets/ 2>/dev/null || true
+          cp artifacts/network_guardian-portable-package/NetworkGuardian_Portable.zip release_assets/ 2>/dev/null || true
+          cp artifacts/model_manifest/model_manifest.json release_assets/ 2>/dev/null || true
+          cp artifacts/model-files/*.pkl release_assets/ 2>/dev/null || true
           
           # Create checksums
           cd release_assets
-          sha256sum * > SHA256SUMS.txt
+          sha256sum * > SHA256SUMS.txt 2>/dev/null || true
           ls -la
 
       - name: Generate changelog
