@@ -122,7 +122,20 @@ jobs:
             build/NetworkGuardian/
             dist/
             *.spec
+            build/NetworkGuardian/warn-*.txt
+            build/NetworkGuardian/*.log
           retention-days: 30
+
+      - name: Debug - list build outputs
+        if: always()
+        run: |
+          echo "=== Build directory ==="
+          ls -la build/ 2>/dev/null || echo "No build dir"
+          echo "=== Dist directory ==="
+          ls -la dist/ 2>/dev/null || echo "No dist dir"
+          echo "=== Spec files ==="
+          ls -la *.spec 2>/dev/null || echo "No spec files"
+        shell: pwsh
 
       - name: Verify executable
         run: |
