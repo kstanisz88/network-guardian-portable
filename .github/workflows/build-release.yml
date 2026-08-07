@@ -119,7 +119,7 @@ jobs:
         with:
           name: pyinstaller-build-logs
           path: |
-            build/NetworkGuardian/
+            build/
             dist/
             *.spec
             build/NetworkGuardian/warn-*.txt
