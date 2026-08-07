@@ -141,15 +141,16 @@ exe = EXE(
     print("\n🚀 Running PyInstaller...")
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "PyInstaller", str(spec_path), "--clean"],
+            [sys.executable, "-m", "PyInstaller", str(spec_path), "--clean", "--log-level=DEBUG"],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=600
         )
         
         if result.returncode != 0:
             print("❌ PyInstaller failed:")
-            print(result.stderr[-3000:])
+            print("STDOUT:", result.stdout[-5000:])
+            print("STDERR:", result.stderr[-5000:])
             return False
         
         # Verify executable
