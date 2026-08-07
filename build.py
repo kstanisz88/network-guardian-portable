@@ -47,13 +47,18 @@ if venv_path:
     site_packages_dirs.append(os.path.join(venv_path, 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}', 'site-packages'))
 
 # Find openblas files in all site-packages directories
+# On Windows, look for .dll/.pyd files; on Linux, .so files
 openblas_files = []
 for sp_dir in site_packages_dirs:
+    if not os.path.exists(sp_dir):
+        continue
     for pattern in [
         os.path.join(sp_dir, 'numpy.libs', 'libscipy_openblas64_*.so'),
         os.path.join(sp_dir, 'numpy.libs', 'libscipy_openblas64_*.dll'),
+        os.path.join(sp_dir, 'numpy.libs', 'libscipy_openblas64_*.pyd'),
         os.path.join(sp_dir, 'scipy.libs', 'libscipy_openblas*.so'),
         os.path.join(sp_dir, 'scipy.libs', 'libscipy_openblas*.dll'),
+        os.path.join(sp_dir, 'scipy.libs', 'libscipy_openblas*.pyd'),
     ]:
         openblas_files.extend(glob.glob(pattern))
 
@@ -70,6 +75,10 @@ for f in openblas_files:
 print(f"Found {len(openblas_datas)} openblas files:")
 for src, dst in openblas_datas:
     print(f"  {src} -> {dst}")
+
+# If no openblas files found, print warning but continue
+if not openblas_datas:
+    print("WARNING: No openblas files found! Build may fail at runtime.")
 
 a = Analysis(
     ['src/main.py'],
