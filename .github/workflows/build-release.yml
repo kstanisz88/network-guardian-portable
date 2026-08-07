@@ -106,7 +106,11 @@ jobs:
 
       - name: Build portable executable with PyInstaller
         run: |
-          python build.py build
+          python build.py build 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "PyInstaller failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
         shell: pwsh
 
       - name: Verify executable
