@@ -201,6 +201,10 @@ jobs:
           test -f NetworkGuardian.exe && echo "✅ NetworkGuardian.exe found" || echo "❌ NetworkGuardian.exe MISSING"
           test -f NetworkGuardian_Portable.zip && echo "✅ NetworkGuardian_Portable.zip found" || echo "❌ NetworkGuardian_Portable.zip MISSING"
           test -f model_manifest.json && echo "✅ model_manifest.json found" || echo "❌ model_manifest.json MISSING"
+          
+          # Debug: show what we actually have
+          echo "=== All files in release_assets ==="
+          ls -la
 
       - name: Generate changelog
         id: changelog
