@@ -195,6 +195,12 @@ jobs:
           cd release_assets
           sha256sum * > SHA256SUMS.txt 2>/dev/null || true
           ls -la
+          
+          # Verify critical files exist
+          echo "=== Critical files check ==="
+          test -f NetworkGuardian.exe && echo "✅ NetworkGuardian.exe found" || echo "❌ NetworkGuardian.exe MISSING"
+          test -f NetworkGuardian_Portable.zip && echo "✅ NetworkGuardian_Portable.zip found" || echo "❌ NetworkGuardian_Portable.zip MISSING"
+          test -f model_manifest.json && echo "✅ model_manifest.json found" || echo "❌ model_manifest.json MISSING"
 
       - name: Generate changelog
         id: changelog
