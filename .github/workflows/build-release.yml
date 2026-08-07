@@ -113,6 +113,17 @@ jobs:
           }
         shell: pwsh
 
+      - name: Upload PyInstaller build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyinstaller-build-logs
+          path: |
+            build/NetworkGuardian/
+            dist/
+            *.spec
+          retention-days: 30
+
       - name: Verify executable
         run: |
           $exe = "dist/${env:PROJECT_NAME}.exe"
