@@ -130,11 +130,11 @@ jobs:
         if: always()
         run: |
           echo "=== Build directory ==="
-          ls -la build/ 2>/dev/null || echo "No build dir"
+          Get-ChildItem build/ 2>$null | ForEach-Object { $_.FullName } | Write-Host
           echo "=== Dist directory ==="
-          ls -la dist/ 2>/dev/null || echo "No dist dir"
+          Get-ChildItem dist/ 2>$null | ForEach-Object { $_.FullName } | Write-Host
           echo "=== Spec files ==="
-          ls -la *.spec 2>/dev/null || echo "No spec files"
+          Get-ChildItem *.spec 2>$null | ForEach-Object { $_.FullName } | Write-Host
         shell: pwsh
 
       - name: Verify executable
